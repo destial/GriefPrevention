@@ -71,6 +71,8 @@
                 <configuration>
                     <source>16</source>
                     <target>16</target>
+					<fork>true</fork>
+                    <executable>C:\Program Files\Java\jdk-16.0.1\bin\javac</executable>
                 </configuration>
             </plugin>
             <!-- Append git commit hash to version -->
@@ -184,13 +186,6 @@
             <version>23.0.0</version>
             <!-- Annotations are not required at runtime, only during compilation. -->
             <scope>provided</scope>
-        </dependency>
-        <!-- Tests -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.7.0</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
