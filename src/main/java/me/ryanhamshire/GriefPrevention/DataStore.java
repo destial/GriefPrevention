@@ -1154,7 +1154,7 @@ public abstract class DataStore
         //why isn't this a "repeating" task?
         //because depending on the status of the siege at the time the task runs, there may or may not be a reason to run the task again
         SiegeCheckupTask task = new SiegeCheckupTask(siegeData);
-        siegeData.checkupTaskID = GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 30);
+        siegeData.checkupTaskID = GriefPrevention.instance.getScheduler().runTaskLater(task, siegeData.attacker, 20L * 30);
     }
 
     //ends a siege
@@ -1220,7 +1220,7 @@ public abstract class DataStore
         }
 
         //cancel the siege checkup task
-        GriefPrevention.instance.getServer().getScheduler().cancelTask(siegeData.checkupTaskID);
+        siegeData.checkupTaskID.cancel();
 
         //notify everyone who won and lost
         if (winnerName != null && loserName != null)
@@ -1241,9 +1241,7 @@ public abstract class DataStore
                 //schedule a task to secure the claims in about 5 minutes
                 SecureClaimTask task = new SecureClaimTask(siegeData);
 
-                GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(
-                        GriefPrevention.instance, task, 20L * GriefPrevention.instance.config_siege_doorsOpenSeconds
-                );
+                GriefPrevention.instance.getScheduler().runTaskLater(task, siegeData.attacker, 20L * GriefPrevention.instance.config_siege_doorsOpenSeconds);
             }
         }
 

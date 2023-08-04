@@ -142,6 +142,6 @@ class EntityCleanupTask implements Runnable
         }
 
         EntityCleanupTask task = new EntityCleanupTask(nextRunPercentageStart);
-        GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 60 * 1);
+        GriefPrevention.instance.getScheduler().runTaskLater(task, 20L * 60);
     }
 }

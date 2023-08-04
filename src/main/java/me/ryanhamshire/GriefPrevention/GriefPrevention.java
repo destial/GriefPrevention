@@ -25,6 +25,7 @@ import me.ryanhamshire.GriefPrevention.events.PreventBlockBreakEvent;
 import me.ryanhamshire.GriefPrevention.events.SaveTrappedPlayerEvent;
 import me.ryanhamshire.GriefPrevention.events.TrustChangedEvent;
 import me.ryanhamshire.GriefPrevention.metrics.MetricsHandler;
+import me.ryanhamshire.GriefPrevention.util.Scheduler;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.BanList;
 import org.bukkit.BanList.Type;
@@ -79,6 +80,7 @@ public class GriefPrevention extends JavaPlugin
 {
     //for convenience, a reference to the instance of this plugin
     public static GriefPrevention instance;
+    private Scheduler scheduler;
 
     //for logging to the console and log file
     private static Logger log;
@@ -275,9 +277,11 @@ public class GriefPrevention extends JavaPlugin
     }
 
     //initializes well...   everything
+    @Override
     public void onEnable()
     {
         instance = this;
+        scheduler = new Scheduler(this);
         log = instance.getLogger();
 
         this.loadConfig();
@@ -287,7 +291,7 @@ public class GriefPrevention extends JavaPlugin
         AddLogEntry("Finished loading configuration.");
 
         //when datastore initializes, it loads player and claim data, and posts some stats to the log
-        if (this.databaseUrl.length() > 0)
+        if (!this.databaseUrl.isEmpty())
         {
             try
             {
@@ -349,16 +353,16 @@ public class GriefPrevention extends JavaPlugin
         if (this.config_claims_blocksAccruedPerHour_default > 0)
         {
             DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null, this);
-            this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 10, 20L * 60 * 10);
+            this.getScheduler().runTaskTimer(task, 20L * 60 * 10, 20L * 60 * 10);
         }
 
         //start the recurring cleanup event for entities in creative worlds
         EntityCleanupTask task = new EntityCleanupTask(0);
-        this.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 60 * 2);
+        this.getScheduler().runTaskLater(task, 20L * 60 * 2);
 
         //start recurring cleanup scan for unused claims belonging to inactive players
         FindUnusedClaimsTask task2 = new FindUnusedClaimsTask();
-        this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task2, 20L * 60, 20L * config_advanced_claim_expiration_check_rate);
+        this.getScheduler().runTaskTimer(task2, 20L * 60, 20L * config_advanced_claim_expiration_check_rate);
 
         //register for events
         PluginManager pluginManager = this.getServer().getPluginManager();
@@ -408,6 +412,11 @@ public class GriefPrevention extends JavaPlugin
             new MetricsHandler(this, dataMode);
         }
         catch (Throwable ignored) {}
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
     }
 
     private void loadConfig()
@@ -2479,7 +2488,7 @@ public class GriefPrevention extends JavaPlugin
 
             //create a task to rescue this player in a little while
             PlayerRescueTask task = new PlayerRescueTask(player, player.getLocation(), event.getDestination());
-            this.getServer().getScheduler().scheduleSyncDelayedTask(this, task, 200L);  //20L ~ 1 second
+            this.getScheduler().runTaskLater(task, player, 200L);  //20L ~ 1 second
 
             return true;
         }
@@ -3297,7 +3306,7 @@ public class GriefPrevention extends JavaPlugin
 
             //start a task to re-check this player's inventory every minute until his immunity is gone
             PvPImmunityValidationTask task = new PvPImmunityValidationTask(player);
-            this.getServer().getScheduler().scheduleSyncDelayedTask(this, task, 1200L);
+            this.getScheduler().runTaskLater(task, player, 1200L);
         }
     }
 
@@ -3401,7 +3410,7 @@ public class GriefPrevention extends JavaPlugin
         //Only schedule if there should be a delay. Otherwise, send the message right now, else the message will appear out of order.
         if (delayInTicks > 0)
         {
-            GriefPrevention.instance.getServer().getScheduler().runTaskLater(GriefPrevention.instance, task, delayInTicks);
+            GriefPrevention.instance.getScheduler().runTaskLater(task, player, delayInTicks);
         }
         else
         {
@@ -3590,7 +3599,7 @@ public class GriefPrevention extends JavaPlugin
         //create task
         //when done processing, this task will create a main thread task to actually update the world with processing results
         RestoreNatureProcessingTask task = new RestoreNatureProcessingTask(snapshots, miny, chunk.getWorld().getEnvironment(), lesserBoundaryCorner.getBlock().getBiome(), lesserBoundaryCorner, greaterBoundaryCorner, this.getSeaLevel(chunk.getWorld()), aggressiveMode, GriefPrevention.instance.creativeRulesApply(lesserBoundaryCorner), playerReceivingVisualization);
-        GriefPrevention.instance.getServer().getScheduler().runTaskLaterAsynchronously(GriefPrevention.instance, task, delayInTicks);
+        GriefPrevention.instance.getScheduler().runTaskLaterAsync(task, chunk, delayInTicks);
     }
 
     private Set<Material> parseMaterialListFromConfig(List<String> stringsToParse)
