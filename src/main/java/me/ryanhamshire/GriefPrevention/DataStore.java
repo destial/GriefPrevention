@@ -21,7 +21,6 @@ package me.ryanhamshire.GriefPrevention;
 import com.google.common.io.Files;
 import com.griefprevention.visualization.BoundaryVisualization;
 import com.griefprevention.visualization.VisualizationType;
-import me.ryanhamshire.GriefPrevention.events.ClaimModifiedEvent;
 import me.ryanhamshire.GriefPrevention.events.ClaimResizeEvent;
 import me.ryanhamshire.GriefPrevention.events.ClaimCreatedEvent;
 import me.ryanhamshire.GriefPrevention.events.ClaimDeletedEvent;
@@ -1154,7 +1153,7 @@ public abstract class DataStore
         //why isn't this a "repeating" task?
         //because depending on the status of the siege at the time the task runs, there may or may not be a reason to run the task again
         SiegeCheckupTask task = new SiegeCheckupTask(siegeData);
-        siegeData.checkupTaskID = GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 30);
+        siegeData.checkupTaskID = GriefPrevention.instance.getScheduler().runTaskLater(task, attacker, 20L * 30);
     }
 
     //ends a siege
@@ -1220,7 +1219,7 @@ public abstract class DataStore
         }
 
         //cancel the siege checkup task
-        GriefPrevention.instance.getServer().getScheduler().cancelTask(siegeData.checkupTaskID);
+        siegeData.checkupTaskID.cancel();
 
         //notify everyone who won and lost
         if (winnerName != null && loserName != null)
@@ -1241,8 +1240,8 @@ public abstract class DataStore
                 //schedule a task to secure the claims in about 5 minutes
                 SecureClaimTask task = new SecureClaimTask(siegeData);
 
-                GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(
-                        GriefPrevention.instance, task, 20L * GriefPrevention.instance.config_siege_doorsOpenSeconds
+                GriefPrevention.instance.getScheduler().runTaskLater(task, winner,
+                        20L * GriefPrevention.instance.config_siege_doorsOpenSeconds
                 );
             }
         }
@@ -1452,7 +1451,7 @@ public abstract class DataStore
         newClaim.greaterBoundaryCorner = new Location(world, newx2, newy2, newz2);
 
         //call event here to check if it has been cancelled
-        ClaimResizeEvent event = new ClaimModifiedEvent(oldClaim, newClaim, player); // Swap to ClaimResizeEvent when ClaimModifiedEvent is removed
+        ClaimResizeEvent event = new ClaimResizeEvent(oldClaim, newClaim, player); // Swap to ClaimResizeEvent when ClaimModifiedEvent is removed
         Bukkit.getPluginManager().callEvent(event);
 
         //return here if event is cancelled
